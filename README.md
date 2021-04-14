@@ -20,3 +20,5 @@ convert iptv m3u to csv and back
 ```python3 /path/to/m3uEditor.py```
 
 load m3u -> edit -> save m3u
+
+![screenshot](https://github.com/Axel-Erfurt/m3uEdit/blob/main/screenshot.png)
