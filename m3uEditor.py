@@ -183,6 +183,14 @@ class Viewer(QMainWindow):
         btn.clicked.connect(self.replace_in_table)
         tb.addWidget(btn)
         tb.addSeparator()
+
+        del_btn = QToolButton()
+        del_btn.setIcon(QIcon.fromTheme("edit-delete"))
+        del_btn.setToolTip("delete row")
+        del_btn.clicked.connect(self.del_row)
+        tb.addWidget(del_btn)
+        
+        tb.addSeparator()
         
         add_btn = QToolButton()
         add_btn.setIcon(QIcon.fromTheme("add"))
@@ -203,6 +211,8 @@ class Viewer(QMainWindow):
         tb.addWidget(move_up_up)
         
     def move_down(self):
+        if self.model.rowCount() < 1:
+            return
         i = self.lb.selectionModel().selection().indexes()[0].row()
         b, c = self.df.iloc[i].copy(), self.df.iloc[i+1].copy()
         self.df.iloc[i],self.df.iloc[i+1] = c,b
@@ -210,22 +220,37 @@ class Viewer(QMainWindow):
         self.lb.selectRow(i+1)
         
     def move_up(self):
+        if self.model.rowCount() < 1:
+            return
         i = self.lb.selectionModel().selection().indexes()[0].row()
         b, c = self.df.iloc[i].copy(), self.df.iloc[i-1].copy()
         self.df.iloc[i],self.df.iloc[i-1] = c,b
         self.model.setChanged = True
         self.lb.selectRow(i-1)
         
-    def add_row(self): 
+    def del_row(self): 
+        if self.model.rowCount() < 1:
+            return
         i = self.lb.selectionModel().selection().indexes()[0].row()
         if len(self.df.index) > 0:
-            print("adding row")
-            newrow = {0:'name', 1:'title', 2:'logo', 3:'id', 4:'url'}       
-            self.df = self.df.append(newrow, ignore_index=True)
+            self.df = self.df.drop(self.df.index[i])
             self.model = PandasModel(self.df)
             self.lb.setModel(self.model)
             self.model.setChanged = True
-            self.lb.selectRow(self.model.rowCount() - 1)
+            self.lb.selectRow(i)
+            
+    def add_row(self): 
+        if self.model.rowCount() < 1:
+            return
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        #if len(self.df.index) > 0:
+        print("adding row")
+        newrow = {0:'name', 1:'title', 2:'logo', 3:'id', 4:'url'}       
+        self.df = self.df.append(newrow, ignore_index=True)
+        self.model = PandasModel(self.df)
+        self.lb.setModel(self.model)
+        self.model.setChanged = True
+        self.lb.selectRow(self.model.rowCount() - 1)
                 
     def openFile(self, path=None):
         path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
