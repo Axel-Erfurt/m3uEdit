@@ -3,8 +3,8 @@
 import sys
 import pandas as pd
 from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant
-from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, 
-                             QFileDialog, QAbstractItemView, QMessageBox)
+from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, 
+                             QFileDialog, QAbstractItemView, QMessageBox, QToolButton)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
 
 class PandasModel(QAbstractTableModel):
@@ -66,6 +66,7 @@ class PandasModel(QAbstractTableModel):
 class Viewer(QMainWindow):
     def __init__(self, parent=None):
       super(Viewer, self).__init__(parent)
+      self.df = None
       self.filename = ""
       self.fname = ""
       self.csv_file = ""
@@ -86,6 +87,7 @@ class Viewer(QMainWindow):
       self.setWindowTitle("m3u Editor")
       self.setWindowIcon(QIcon.fromTheme("multimedia-playlist"))
       self.createMenuBar()
+      self.createToolBar()
       self.lb.setFocus()
       
     def convert_to_csv(self):
@@ -163,12 +165,43 @@ class Viewer(QMainWindow):
         self.filemenu.addAction(QIcon.fromTheme("document-open"), "Load M3U",  self.loadM3U, QKeySequence.Open) 
         self.filemenu.addAction(QIcon.fromTheme("document-save-as"), "Save as ...",  self.writeCSV, QKeySequence.SaveAs) 
 
+    def createToolBar(self):
+        tb = self.addToolBar("Tools")
+        self.findfield = QLineEdit(placeholderText = "find ...")
+        self.findfield.setFixedWidth(200)
+        tb.addWidget(self.findfield)
+        tb.addSeparator()
+        self.replacefield = QLineEdit(placeholderText = "replace with ...")
+        self.replacefield.setFixedWidth(200)
+        tb.addWidget(self.replacefield)
+        tb.addSeparator()
+        btn = QToolButton()
+        btn.setText("replace all")
+        btn.setToolTip("replace all")
+        btn.clicked.connect(self.replace_in_table)
+        tb.addWidget(btn)
+        
     def openFile(self, path=None):
         path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
         if path:
             return path
 
     def loadM3U(self):
+        if self.model.setChanged == True:
+            save_msg = "<b>The document was changed.<br>Do you want to save the changes?</ b>"
+            reply = QMessageBox.question(self, 'Save Confirmation', 
+                     save_msg, QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.writeCSV()
+                self.open_m3u()
+            else:
+                self.model.setChanged = False
+                self.open_m3u()
+        else:
+            self.model.setChanged = False
+            self.open_m3u()
+        
+    def open_m3u(self):
         fileName = self.openFile()
         if fileName:
             self.m3u_file = fileName
@@ -177,10 +210,9 @@ class Viewer(QMainWindow):
             f = open(self.csv_file, 'r+b')
             with f:
                 self.filename = fileName
-                df = pd.read_csv(f, delimiter = '\t', keep_default_na = False, low_memory=False, header=None)
-                self.model = PandasModel(df)
+                self.df = pd.read_csv(f, delimiter = '\t', keep_default_na = False, low_memory=False, header=None)
+                self.model = PandasModel(self.df)
                 self.lb.setModel(self.model)
-                #self.model.setHeaderData(0, Qt.Horizontal, 'tvg-name', Qt.DisplayRole)  
                 self.lb.resizeColumnsToContents()
                 self.lb.selectRow(0)
                 self.statusBar().showMessage(f"{fileName} loaded", 0)
@@ -227,21 +259,16 @@ class Viewer(QMainWindow):
             self.model.setChanged = False
 
 
-    def writeCSV_update(self):
-        quit_msg = "<b>The document was changed.<br>Do you want to save the changes?</ b>"
-        reply = QMessageBox.question(self, 'Save Confirmation', 
-                 quit_msg, QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            event.accept()
-            if self.filename:
-                print(self.filename + " saved")
-                f = open(self.filename, 'w')
-                newModel = self.model
-                dataFrame = newModel._df.copy()
-                dataFrame.to_csv(f, sep='\t', index = False, header = False)
-        else:
-            print("not saved, goodbye ...")
+    def replace_in_table(self):
+        #DataFrame.replace(to_replace=None, value=None, inplace=False, limit=None, regex=False, method='pad')
+        searchterm = self.findfield.text()
+        replaceterm = self.replacefield.text()
+        if searchterm == "" or replaceterm == "":
             return
+        else:
+            if len(self.df.index) > 0:
+                self.df.replace(searchterm, replaceterm, inplace=True)
+                self.lb.resizeColumnsToContents()
 
 def stylesheet(self):
         return """
