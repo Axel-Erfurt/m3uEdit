@@ -48,7 +48,7 @@ for x in range(1, len(mylist)-1):
         
         if 'tvg-id="' in line:
             id = line.partition('tvg-id="')[2].partition('"')[0]
-        if 'tvg-id=' in line:
+        elif 'tvg-id=' in line:
             id = line.partition('tvg-id=')[2].partition(' ')[0]
         else:
             id = ""
