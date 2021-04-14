@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import pandas as pd
-from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant
+from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize
 from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, 
                              QFileDialog, QAbstractItemView, QMessageBox, QToolButton)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
@@ -79,6 +79,7 @@ class Viewer(QMainWindow):
       self.lb.setEditTriggers(QAbstractItemView.DoubleClicked)
       self.lb.setSelectionBehavior(self.lb.SelectRows)
       self.lb.setSelectionMode(self.lb.SingleSelection)
+      self.lb.setDragDropMode(self.lb.InternalMove)
       self.setStyleSheet(stylesheet(self))
       self.lb.setAcceptDrops(True)
       self.setCentralWidget(self.lb)
@@ -167,6 +168,7 @@ class Viewer(QMainWindow):
 
     def createToolBar(self):
         tb = self.addToolBar("Tools")
+        tb.setIconSize(QSize(16, 16))
         self.findfield = QLineEdit(placeholderText = "find ...")
         self.findfield.setFixedWidth(200)
         tb.addWidget(self.findfield)
@@ -180,7 +182,51 @@ class Viewer(QMainWindow):
         btn.setToolTip("replace all")
         btn.clicked.connect(self.replace_in_table)
         tb.addWidget(btn)
+        tb.addSeparator()
         
+        add_btn = QToolButton()
+        add_btn.setIcon(QIcon.fromTheme("add"))
+        add_btn.setToolTip("add row")
+        add_btn.clicked.connect(self.add_row)
+        tb.addWidget(add_btn)
+
+        move_down_btn = QToolButton()
+        move_down_btn.setIcon(QIcon.fromTheme("down"))
+        move_down_btn.setToolTip("move down")
+        move_down_btn.clicked.connect(self.move_down)
+        tb.addWidget(move_down_btn)
+        
+        move_up_up = QToolButton()
+        move_up_up.setIcon(QIcon.fromTheme("up"))
+        move_up_up.setToolTip("move up")
+        move_up_up.clicked.connect(self.move_up)
+        tb.addWidget(move_up_up)
+        
+    def move_down(self):
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        b, c = self.df.iloc[i].copy(), self.df.iloc[i+1].copy()
+        self.df.iloc[i],self.df.iloc[i+1] = c,b
+        self.model.setChanged = True
+        self.lb.selectRow(i+1)
+        
+    def move_up(self):
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        b, c = self.df.iloc[i].copy(), self.df.iloc[i-1].copy()
+        self.df.iloc[i],self.df.iloc[i-1] = c,b
+        self.model.setChanged = True
+        self.lb.selectRow(i-1)
+        
+    def add_row(self): 
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        if len(self.df.index) > 0:
+            print("adding row")
+            newrow = {0:'name', 1:'title', 2:'logo', 3:'id', 4:'url'}       
+            self.df = self.df.append(newrow, ignore_index=True)
+            self.model = PandasModel(self.df)
+            self.lb.setModel(self.model)
+            self.model.setChanged = True
+            self.lb.selectRow(self.model.rowCount() - 1)
+                
     def openFile(self, path=None):
         path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
         if path:
