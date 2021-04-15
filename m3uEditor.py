@@ -3,7 +3,7 @@
 import sys
 import pandas as pd
 from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize
-from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, 
+from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, QComboBox, 
                              QFileDialog, QAbstractItemView, QMessageBox, QToolButton)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
 
@@ -169,19 +169,27 @@ class Viewer(QMainWindow):
     def createToolBar(self):
         tb = self.addToolBar("Tools")
         tb.setIconSize(QSize(16, 16))
+        
         self.findfield = QLineEdit(placeholderText = "find ...")
+        self.findfield.setClearButtonEnabled(True)
         self.findfield.setFixedWidth(200)
         tb.addWidget(self.findfield)
+        
         tb.addSeparator()
+        
         self.replacefield = QLineEdit(placeholderText = "replace with ...")
+        self.replacefield.setClearButtonEnabled(True)
         self.replacefield.setFixedWidth(200)
         tb.addWidget(self.replacefield)
+        
         tb.addSeparator()
+        
         btn = QToolButton()
         btn.setText("replace all")
         btn.setToolTip("replace all")
         btn.clicked.connect(self.replace_in_table)
         tb.addWidget(btn)
+        
         tb.addSeparator()
 
         del_btn = QToolButton()
@@ -209,6 +217,23 @@ class Viewer(QMainWindow):
         move_up_up.setToolTip("move up")
         move_up_up.clicked.connect(self.move_up)
         tb.addWidget(move_up_up)
+        
+        tb.addSeparator()
+        
+        self.filter_field = QLineEdit(placeholderText = "filter group (press Enter)")
+        self.filter_field.setClearButtonEnabled(True)
+        self.filter_field.setToolTip("insert search term and press enter\n use Selector → to choose column to search")
+        self.filter_field.setFixedWidth(200)
+        self.filter_field.returnPressed.connect(self.filter_table)
+        self.filter_field.textChanged.connect(self.update_filter)
+        tb.addWidget(self.filter_field)
+        
+        self.filter_combo = QComboBox()
+        self.filter_combo.setToolTip("choose column to search")
+        self.filter_combo.setFixedWidth(100)
+        self.filter_combo.addItems(['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url'])
+        self.filter_combo.currentIndexChanged.connect(self.filter_table)
+        tb.addWidget(self.filter_combo)
         
     def move_down(self):
         if self.model.rowCount() < 1:
@@ -332,14 +357,30 @@ class Viewer(QMainWindow):
 
     def replace_in_table(self):
         #DataFrame.replace(to_replace=None, value=None, inplace=False, limit=None, regex=False, method='pad')
+        if self.model.rowCount() < 1:
+            return
         searchterm = self.findfield.text()
         replaceterm = self.replacefield.text()
         if searchterm == "" or replaceterm == "":
             return
         else:
             if len(self.df.index) > 0:
-                self.df.replace(searchterm, replaceterm, inplace=True)
+                self.df.replace(searchterm, replaceterm, inplace=True, regex=True)
                 self.lb.resizeColumnsToContents()
+                
+    def filter_table(self):
+        if self.model.rowCount() < 1:
+            return
+        index = self.filter_combo.currentIndex()
+        searchterm = self.filter_field.text()
+        df_filtered = self.df[self.df[index].str.contains(searchterm, case=False)]
+        self.model = PandasModel(df_filtered)
+        self.lb.setModel(self.model)
+        self.lb.resizeColumnsToContents()       
+       
+    def update_filter(self):
+        if self.filter_field.text() == "":
+            self.filter_table()
 
 def stylesheet(self):
         return """
