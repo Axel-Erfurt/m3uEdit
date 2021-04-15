@@ -19,6 +19,10 @@ convert iptv m3u to csv and back
 
 ```python3 /path/to/m3uEditor.py```
 
+or
+
+```python3 /path/to/m3uEditorGtk.py```
+
 load m3u -> edit -> save m3u
 
 - delete channels
@@ -31,3 +35,7 @@ load m3u -> edit -> save m3u
 You can filter group by searchterm and save this as new m3u
 
 ![screenshot](https://github.com/Axel-Erfurt/m3uEdit/blob/main/screenshot.png)
+
+Gtk Version
+
+![screenshot](https://github.com/Axel-Erfurt/m3uEdit/blob/main/screenshot2.png)
