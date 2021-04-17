@@ -544,7 +544,8 @@ class TreeViewFilterWindow(Gtk.Window):
             return False
 
         value = model.get_value(iter, active_category).lower()
-        return True if value.startswith(search_query) else False
+        #return True if value.startswith(search_query) else False
+        return True if search_query in value else False
         
     def on_filter_changed(self, *args):
         if self.search_field.get_text() == "":
