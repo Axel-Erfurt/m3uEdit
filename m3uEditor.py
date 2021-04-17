@@ -3,8 +3,8 @@
 import sys
 import pandas as pd
 from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize, QProcess
-from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, QComboBox, 
-                             QFileDialog, QAbstractItemView, QMessageBox, QToolButton)
+from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, QComboBox, QWidget, 
+                             QFileDialog, QAbstractItemView, QMessageBox, QToolButton, QToolBar, QSizePolicy)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
 
 class PandasModel(QAbstractTableModel):
@@ -87,10 +87,38 @@ class Viewer(QMainWindow):
       self.statusBar().showMessage("Ready", 0)
       self.setWindowTitle("m3u Editor")
       self.setWindowIcon(QIcon.fromTheme("multimedia-playlist"))
-      self.createMenuBar()
       self.createToolBar()
       self.lb.setFocus()
       
+    def copy_row(self):
+        if self.model.rowCount() < 1:
+            return
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        b = self.df.iloc[i].copy()
+        name = b[0]
+        group = b[1]
+        logo = b[2]
+        id = b[3]
+        url = b[4]
+        self.copied_row = b
+        c_line = f'#EXTINF:-1 tvg-name="{name}" group-title="{group}" tvg-logo="{logo}" tvg-id="{id}"\n{url}'
+        QApplication.clipboard().setText(c_line)
+        
+    def cut_row(self):
+        if self.model.rowCount() < 1:
+            return
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        self.copy_row()
+        self.del_row()
+        self.model.setChanged = True
+        
+    def paste_row(self):
+        if self.model.rowCount() < 1:
+            return
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        self.df.iloc[i] = self.copied_row
+        self.model.setChanged = True
+  
     def convert_to_csv(self):
         mylist = open(self.m3u_file, 'r').read().splitlines()
 
@@ -159,46 +187,65 @@ class Viewer(QMainWindow):
         else:
             print("nothing changed. goodbye")
 
-    def createMenuBar(self):
-        bar=self.menuBar()
-        self.filemenu=bar.addMenu("File")
-        self.separatorAct = self.filemenu.addSeparator()
-        self.filemenu.addAction(QIcon.fromTheme("document-open"), "Load M3U",  self.loadM3U, QKeySequence.Open) 
-        self.filemenu.addAction(QIcon.fromTheme("document-save-as"), "Save as ...",  self.writeCSV, QKeySequence.SaveAs) 
-
     def createToolBar(self):
-        tb = self.addToolBar("Tools")
+        tb = QToolBar("Tools")
+        tb.setMovable(False)
+        tb.setAllowedAreas(Qt.TopToolBarArea)
+        self.addToolBar(tb)
         tb.setIconSize(QSize(16, 16))
-        
-        self.findfield = QLineEdit(placeholderText = "find ...")
-        self.findfield.setClearButtonEnabled(True)
-        self.findfield.setFixedWidth(200)
-        tb.addWidget(self.findfield)
-        
-        tb.addSeparator()
-        
-        self.replacefield = QLineEdit(placeholderText = "replace with ...")
-        self.replacefield.setClearButtonEnabled(True)
-        self.replacefield.setFixedWidth(200)
-        tb.addWidget(self.replacefield)
-        
-        tb.addSeparator()
-        
-        btn = QToolButton()
-        btn.setText("replace all")
-        btn.setToolTip("replace all")
-        btn.clicked.connect(self.replace_in_table)
-        tb.addWidget(btn)
-        
-        tb.addSeparator()
 
+        new_btn = QToolButton()
+        new_btn.setShortcut(QKeySequence.New)
+        new_btn.setIcon(QIcon.fromTheme("document-new"))
+        new_btn.setToolTip("create new m3u File")
+        new_btn.clicked.connect(self.new_file)
+        tb.addWidget(new_btn)
+        
+        open_btn = QToolButton()
+        open_btn.setShortcut(QKeySequence.Open)
+        open_btn.setIcon(QIcon.fromTheme("document-open"))
+        open_btn.setToolTip("open m3u File")
+        open_btn.clicked.connect(self.loadM3U)
+        tb.addWidget(open_btn)
+
+        save_btn = QToolButton()
+        save_btn.setShortcut(QKeySequence.SaveAs)
+        save_btn.setIcon(QIcon.fromTheme("document-save"))
+        save_btn.setToolTip("save m3u File")
+        save_btn.clicked.connect(self.writeCSV)
+        tb.addWidget(save_btn)
+        
+        empty = QWidget()
+        empty.setFixedWidth(44)
+        tb.addWidget(empty)
+
+        cut_btn = QToolButton()
+        cut_btn.setIcon(QIcon.fromTheme("edit-cut"))
+        cut_btn.setToolTip("cut row")
+        cut_btn.clicked.connect(self.cut_row)
+        tb.addWidget(cut_btn)
+        
+        copy_btn = QToolButton()
+        copy_btn.setIcon(QIcon.fromTheme("edit-copy"))
+        copy_btn.setToolTip("copy row")
+        copy_btn.clicked.connect(self.copy_row)
+        tb.addWidget(copy_btn)
+
+        paste_btn = QToolButton()
+        paste_btn.setIcon(QIcon.fromTheme("edit-paste"))
+        paste_btn.setToolTip("paste row")
+        paste_btn.clicked.connect(self.paste_row)
+        tb.addWidget(paste_btn)
+
+        next_empty = QWidget()
+        next_empty.setFixedWidth(44)        
+        tb.addWidget(next_empty)
+        
         del_btn = QToolButton()
         del_btn.setIcon(QIcon.fromTheme("edit-delete"))
         del_btn.setToolTip("delete row")
         del_btn.clicked.connect(self.del_row)
         tb.addWidget(del_btn)
-        
-        tb.addSeparator()
         
         add_btn = QToolButton()
         add_btn.setIcon(QIcon.fromTheme("add"))
@@ -218,18 +265,20 @@ class Viewer(QMainWindow):
         move_up_up.clicked.connect(self.move_up)
         tb.addWidget(move_up_up)
         
-        tb.addSeparator()
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        tb.addWidget(spacer)
         
         self.filter_field = QLineEdit(placeholderText = "filter group (press Enter)")
         self.filter_field.setClearButtonEnabled(True)
-        self.filter_field.setToolTip("insert search term and press enter\n use Selector → to choose column to search")
+        self.filter_field.setToolTip("insert search term and press enter\n use Selector → to choose column for filter")
         self.filter_field.setFixedWidth(200)
         self.filter_field.returnPressed.connect(self.filter_table)
         self.filter_field.textChanged.connect(self.update_filter)
         tb.addWidget(self.filter_field)
         
         self.filter_combo = QComboBox()
-        self.filter_combo.setToolTip("choose column to search")
+        self.filter_combo.setToolTip("choose column for filter")
         self.filter_combo.setFixedWidth(100)
         self.filter_combo.addItems(['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url'])
         self.filter_combo.currentIndexChanged.connect(self.filter_table)
@@ -247,15 +296,51 @@ class Viewer(QMainWindow):
         stop_btn.clicked.connect(self.stop_mpv)
         tb.addWidget(stop_btn)
         
+        self.addToolBarBreak()
+        
+        tbf = QToolBar("Find")
+        tbf.setMovable(False)
+        tbf.setAllowedAreas(Qt.TopToolBarArea)
+        self.addToolBar(tbf)
+        self.findfield = QLineEdit(placeholderText = "find ...")
+        self.findfield.setClearButtonEnabled(True)
+        self.findfield.setFixedWidth(200)
+        tbf.addWidget(self.findfield)
+        
+        tbf.addSeparator()
+        
+        self.replacefield = QLineEdit(placeholderText = "replace with ...")
+        self.replacefield.setClearButtonEnabled(True)
+        self.replacefield.setFixedWidth(200)
+        tbf.addWidget(self.replacefield)
+        
+        btn = QToolButton()
+        btn.setText("replace all")
+        btn.setToolTip("replace all")
+        btn.clicked.connect(self.replace_in_table)
+        tbf.addWidget(btn)
+        
+    def new_file(self):
+        columns = ["name", "group", "logo", "id", "url"]
+        self.df = pd.DataFrame(columns=["name", "group", "logo", "id", "url"])
+        self.df.loc[len(self.df)] = columns
+        self.model = PandasModel(self.df)
+        self.lb.setModel(self.model)
+        self.lb.selectRow(self.model.rowCount() - 1)
+        self.model.setChanged = True
+        
+        
     def play_with_mpv(self):
         if self.model.rowCount() < 1:
             return
         i = self.lb.selectionModel().selection().indexes()[0].row()
         url = self.df.iloc[i][4]
         print(i, url)
-        self.process.start("mpv", [url])
+        self.process.start("mpv", ['--geometry=33%', url])
             
     def stop_mpv(self):
+        if self.model.rowCount() < 1:
+            return
         self.process.kill()
         
     def move_down(self):
@@ -288,22 +373,29 @@ class Viewer(QMainWindow):
             self.lb.selectRow(i)
             
     def add_row(self): 
-        if self.model.rowCount() < 1:
-            return
-        i = self.lb.selectionModel().selection().indexes()[0].row()
-        #if len(self.df.index) > 0:
-        print("adding row")
-        newrow = {0:'name', 1:'title', 2:'logo', 3:'id', 4:'url'}       
-        self.df = self.df.append(newrow, ignore_index=True)
-        self.model = PandasModel(self.df)
-        self.lb.setModel(self.model)
-        self.model.setChanged = True
-        self.lb.selectRow(self.model.rowCount() - 1)
+        if self.model.rowCount() > 0:
+            i = self.lb.selectionModel().selection().indexes()[0].row()
+            print("adding row")
+            newrow = {0:'name', 1:'title', 2:'logo', 3:'id', 4:'url'}       
+            self.df = self.df.append(newrow, ignore_index=True)
+            self.model = PandasModel(self.df)
+            self.lb.setModel(self.model)
+            self.model.setChanged = True
+            self.lb.selectRow(self.model.rowCount() - 1)
                 
     def openFile(self, path=None):
-        path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
-        if path:
-            return path
+        if  self.model.setChanged == True:
+            quit_msg = "<b>The document was changed.<br>Do you want to save the changes?</ b>"
+            reply = QMessageBox.question(self, 'Save Confirmation', 
+                     quit_msg, QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
+                if path:
+                    return path
+        else:
+            path, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Dokumente/TV/","Playlists (*.m3u)")
+            if path:
+                return path            
 
     def loadM3U(self):
         if self.model.setChanged == True:
@@ -340,6 +432,8 @@ class Viewer(QMainWindow):
              
 
     def writeCSV(self):
+        if self.model.rowCount() < 1:
+            return
         fileName, _ = QFileDialog.getSaveFileName(self, "Save File", self.fname.replace(".csv", ".m3u"),"M3U Files (*.m3u)")
         if fileName:
             # save temporary csv
@@ -379,7 +473,6 @@ class Viewer(QMainWindow):
 
 
     def replace_in_table(self):
-        #DataFrame.replace(to_replace=None, value=None, inplace=False, limit=None, regex=False, method='pad')
         if self.model.rowCount() < 1:
             return
         searchterm = self.findfield.text()
@@ -428,17 +521,6 @@ class Viewer(QMainWindow):
             
 def stylesheet(self):
         return """
-    QMenuBar
-        {
-            background: transparent;
-            border: 0px;
-        }
-        
-    QMenuBar:hover
-        {
-            background: #d3d7cf;
-        }
-        
     QTableView
         {
             border: 1px solid #d3d7cf;
@@ -481,7 +563,10 @@ def stylesheet(self):
         font-size: 7pt;
         color: #555753;
         }
-        
+    QToolButton:hover
+        {   
+            background: #a5dcff;           
+        }        
     """
  
 if __name__ == "__main__":
