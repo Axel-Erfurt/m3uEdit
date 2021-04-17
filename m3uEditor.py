@@ -243,7 +243,7 @@ class Viewer(QMainWindow):
         
         stop_btn = QToolButton()
         stop_btn.setIcon(QIcon.fromTheme("media-playback-stop"))
-        stop_btn.setToolTip("play with mpv")
+        stop_btn.setToolTip("stop mpv")
         stop_btn.clicked.connect(self.stop_mpv)
         tb.addWidget(stop_btn)
         
