@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import pandas as pd
-from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize
+from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize, QProcess
 from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, QComboBox, 
                              QFileDialog, QAbstractItemView, QMessageBox, QToolButton)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
@@ -16,7 +16,6 @@ class PandasModel(QAbstractTableModel):
 
     def setModified(self):
         self.setChanged = True
-        print(self.setChanged)
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role != Qt.DisplayRole:
@@ -71,6 +70,7 @@ class Viewer(QMainWindow):
       self.fname = ""
       self.csv_file = ""
       self.m3u_file = ""
+      self.process = QProcess()
       self.setGeometry(0, 0, 1000, 600)
       self.lb = QTableView()
       self.lb.horizontalHeader().hide()
@@ -235,6 +235,29 @@ class Viewer(QMainWindow):
         self.filter_combo.currentIndexChanged.connect(self.filter_table)
         tb.addWidget(self.filter_combo)
         
+        play_btn = QToolButton()
+        play_btn.setIcon(QIcon.fromTheme("mpv"))
+        play_btn.setToolTip("play with mpv")
+        play_btn.clicked.connect(self.play_with_mpv)
+        tb.addWidget(play_btn)
+        
+        stop_btn = QToolButton()
+        stop_btn.setIcon(QIcon.fromTheme("media-playback-stop"))
+        stop_btn.setToolTip("play with mpv")
+        stop_btn.clicked.connect(self.stop_mpv)
+        tb.addWidget(stop_btn)
+        
+    def play_with_mpv(self):
+        if self.model.rowCount() < 1:
+            return
+        i = self.lb.selectionModel().selection().indexes()[0].row()
+        url = self.df.iloc[i][4]
+        print(i, url)
+        self.process.start("mpv", [url])
+            
+    def stop_mpv(self):
+        self.process.kill()
+        
     def move_down(self):
         if self.model.rowCount() < 1:
             return
@@ -372,16 +395,33 @@ class Viewer(QMainWindow):
         if self.model.rowCount() < 1:
             return
         index = self.filter_combo.currentIndex()
-        searchterm = self.filter_field.text()
-        df_filtered = self.df[self.df[index].str.contains(searchterm, case=False)]
-        self.model = PandasModel(df_filtered)
-        self.lb.setModel(self.model)
-        self.lb.resizeColumnsToContents()       
+        searchterm = self.filter_field.text()  
+        if searchterm == "":
+            return
+        row_list = []
+        self.lb.clearSelection()
+
+        for i in range(self.lb.model().columnCount()):
+            indexes = self.lb.model().match(
+                                self.lb.model().index(0, index),
+                                Qt.DisplayRole,
+                                searchterm,
+                                -1,
+                                Qt.MatchContains
+                            )
+            for ix in indexes:
+                self.lb.selectRow(ix.row())    
+                row_list.append(ix.row()) 
+                
+        for x in range(self.lb.model().rowCount()):
+            if not x in row_list:
+                self.lb.hideRow(x)
        
     def update_filter(self):
         if self.filter_field.text() == "":
-            self.filter_table()
-
+            for x in range(self.lb.model().rowCount()):
+                self.lb.showRow(x)
+            
 def stylesheet(self):
         return """
     QMenuBar
