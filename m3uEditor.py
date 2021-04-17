@@ -394,6 +394,7 @@ class Viewer(QMainWindow):
     def filter_table(self):
         if self.model.rowCount() < 1:
             return
+        self.clear_filter()
         index = self.filter_combo.currentIndex()
         searchterm = self.filter_field.text()  
         if searchterm == "":
@@ -419,8 +420,11 @@ class Viewer(QMainWindow):
        
     def update_filter(self):
         if self.filter_field.text() == "":
-            for x in range(self.lb.model().rowCount()):
-                self.lb.showRow(x)
+            self.clear_filter()
+
+    def clear_filter(self):
+        for x in range(self.lb.model().rowCount()):
+            self.lb.showRow(x)        
             
 def stylesheet(self):
         return """
