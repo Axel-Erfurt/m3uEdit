@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 import sys
 import pandas as pd
-from PyQt5.QtCore import Qt, QDir, QAbstractTableModel, QModelIndex, QVariant, QSize, QProcess
-from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, QComboBox, QWidget, 
-                             QFileDialog, QAbstractItemView, QMessageBox, QToolButton, QToolBar, QSizePolicy)
+from PyQt5.QtCore import (Qt, QDir, QAbstractTableModel, QModelIndex, 
+                          QVariant, QSize, QProcess, QFile, QDate, QTime)
+from PyQt5.QtWidgets import (QMainWindow, QTableView, QApplication, QLineEdit, 
+                             QComboBox, QWidget, QFileDialog, QAbstractItemView, 
+                             QMessageBox, QToolButton, QToolBar, QSizePolicy)
 from PyQt5.QtGui import QStandardItem, QIcon, QKeySequence
 
 class PandasModel(QAbstractTableModel):
@@ -421,6 +423,13 @@ class Viewer(QMainWindow):
     def open_m3u(self):
         fileName = self.openFile()
         if fileName:
+            # backup
+            date_now = QDate.toString(QDate.currentDate(), "dd-MM-yyyy")
+            time_now = QTime.toString(QTime.currentTime(), "HH-mm-ss")
+            ext = f'{date_now}_{time_now}'
+            backup_file = f'{fileName}_{ext}'
+            QFile.copy(fileName, backup_file)
+            # load
             self.m3u_file = fileName
             self.convert_to_csv()
             print(fileName + " loaded")
