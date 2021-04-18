@@ -315,10 +315,16 @@ class Viewer(QMainWindow):
         tbf.addWidget(self.replacefield)
         
         btn = QToolButton()
-        btn.setText("replace all")
-        btn.setToolTip("replace all")
+        btn.setText("replace all in  →")
+        btn.setToolTip("replace all\n select column for replacing  →")
         btn.clicked.connect(self.replace_in_table)
         tbf.addWidget(btn)
+        
+        self.replace_filter_combo = QComboBox()
+        self.replace_filter_combo.setToolTip("choose column for filter")
+        self.replace_filter_combo.setFixedWidth(160)
+        self.replace_filter_combo.addItems(['tvg-name', 'group-title', 'tvg-name + group-title'])
+        tbf.addWidget(self.replace_filter_combo)
         
     def new_file(self):
         columns = ["name", "group", "logo", "id", "url"]
@@ -475,14 +481,20 @@ class Viewer(QMainWindow):
     def replace_in_table(self):
         if self.model.rowCount() < 1:
             return
+        index = self.replace_filter_combo.currentIndex()
         searchterm = self.findfield.text()
         replaceterm = self.replacefield.text()
         if searchterm == "" or replaceterm == "":
             return
         else:
             if len(self.df.index) > 0:
-                self.df.replace(searchterm, replaceterm, inplace=True, regex=True)
-                self.lb.resizeColumnsToContents()
+                if index == 0 or index == 1:
+                    self.df[index].replace(searchterm, replaceterm, inplace=True, regex=True)
+                else:
+                    self.df[0].replace(searchterm, replaceterm, inplace=True, regex=True)
+                    self.df[1].replace(searchterm, replaceterm, inplace=True, regex=True)
+            self.lb.resizeColumnsToContents()       
+            self.model.setChanged = True
                 
     def filter_table(self):
         if self.model.rowCount() < 1:
