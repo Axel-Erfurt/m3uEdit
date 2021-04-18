@@ -170,23 +170,41 @@ class TreeViewFilterWindow(Gtk.Window):
         self.column_selector.set_tooltip_text("select column for internal search\nsearch by typing if table has focus")
         self.hbox.pack_start(self.column_selector, False, False, 1)
 
-        # find field # comes later
+        # find field
         self.find_field = Gtk.SearchEntry()
         self.find_field.set_placeholder_text("find ...")
-        self.find_field.connect("activate", self.on_find_button_clicked)
-        #self.find_field.connect("search-changed", self.on_search_changed)
+        self.find_field.connect("activate", self.replace_in_table)
         self.find_field.set_vexpand(False)
-        #self.hbox.pack_start(self.find_field, False, False, 1)
+        self.hbox.pack_start(self.find_field, False, False, 1)
 
-        # replace field  # comes later
+        # replace field
         self.replace_field = Gtk.SearchEntry()
         self.replace_field.set_placeholder_text("replace with ...")
-        #self.replace_field.connect("activate", self.on_replace_button_clicked)
-        #self.replace_field.connect("search-changed", self.on_search_changed)
         self.replace_field.set_vexpand(False)
-        #self.hbox.pack_start(self.replace_field, False, False, 1)
+        self.hbox.pack_start(self.replace_field, False, False, 1)
         
-        self.vbox.pack_start(self.hbox, False, False, 1)        
+        self.vbox.pack_start(self.hbox, False, False, 1)  
+  
+        # replace button
+        self.btn_replace_all = Gtk.Button.new_from_icon_name("edit-find-replace", 2)
+        self.btn_replace_all.set_name("btn_replace_all")
+        self.btn_replace_all.set_tooltip_text("replace all in selected column")
+        self.btn_replace_all.set_hexpand(False)
+        self.btn_replace_all.set_relief(2)
+        self.btn_replace_all.connect("clicked", self.replace_in_table)  
+        
+        self.hbox.pack_start(self.btn_replace_all, False, False, 1)
+        
+        # replace all column selector
+        items = ['tvg-name', 'group-title']
+        self.replace_selector = Gtk.ComboBoxText()
+        self.replace_selector.set_name("replace_selector")
+        for item in items:
+            self.replace_selector.append_text(item)
+        self.replace_selector.set_active(0)
+        self.replace_selector.connect('changed', self.set_search_column)
+        self.replace_selector.set_tooltip_text("select column for replace all")
+        self.hbox.pack_start(self.replace_selector, False, False, 1)
         
         # search field
         self.search_field = Gtk.SearchEntry()
@@ -230,31 +248,48 @@ class TreeViewFilterWindow(Gtk.Window):
         index = self.column_selector.get_active()
         self.treeview.set_search_column(index)
         
-    def on_find_button_clicked(self, *args):
-        model, selected_paths = self.treeview.get_selection().get_selected_rows()
-        if selected_paths:
-            column_number = Gtk.TreeViewColumn()
-            search_term = self.find_field.get_text()         
-            iter_child = self.my_liststore.get_iter(selected_paths[0])
-            
+    def replace_in_table(self, *args):
+        index = int(self.replace_selector.get_active())
+        search_term = self.find_field.get_text()
+        replace_term = self.replace_field.get_text()
+        #for row in self.my_liststore:
+        #    #print(row[:])
+        if index == 0:
+            column_number = 0
+            iter_child = self.my_liststore.get_iter_first()
             tree_path = None
             while iter_child:
-                if search_term in self.my_liststore.get_value(iter_child, 0):
+                if (search_term in self.my_liststore.get_value(iter_child, column_number)):
                     tree_path = self.my_liststore.get_path(iter_child)
-                #iter_child = self.my_liststore.get_iter(selected_paths[0])
+                    print(tree_path, column_number)
+                    value = self.my_liststore.get_value(iter_child, column_number).replace(search_term, replace_term)
+                    print(value)
+                    self.my_liststore.set_value(iter_child, column_number, value)
                 iter_child = self.my_liststore.iter_next(iter_child)
+        elif index == 1:
+            column_number = 1
+            iter_child = self.my_liststore.get_iter_first()
+            tree_path = None
+            while iter_child:
+                if (search_term in self.my_liststore.get_value(iter_child, column_number)):
+                    tree_path = self.my_liststore.get_path(iter_child)
+                    print(tree_path, column_number)
+                    value = self.my_liststore.get_value(iter_child, column_number).replace(search_term, replace_term)
+                    print(value)
+                    self.my_liststore.set_value(iter_child, column_number, value)
+                iter_child = self.my_liststore.iter_next(iter_child)
+        self.is_changed = True
 
-            self.treeview.row_activated(tree_path, column_number)
-            self.treeview.set_cursor(tree_path, column_number, True)    
-   
+            
         
     def maybe_saved(self, *args):
         print("is modified", self.is_changed)
         md = Gtk.MessageDialog(title="m3uEditor", message_type=Gtk.MessageType.QUESTION, 
                                 text="The document was changed.\n\nSave changes?", 
-                                parent=None, buttons=("Cancel", Gtk.ResponseType.CANCEL,
-             "Yes", Gtk.ResponseType.YES, "No", Gtk.ResponseType.NO))
-        
+                                parent=None)
+        md.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+             "Yes", Gtk.ResponseType.YES, "No", Gtk.ResponseType.NO)
+             
         response = md.run()
         if response == Gtk.ResponseType.YES:
             ### save
@@ -267,6 +302,26 @@ class TreeViewFilterWindow(Gtk.Window):
         elif response == Gtk.ResponseType.CANCEL:
             md.destroy()
             return True
+        md.destroy()
+        
+    def maybe_saved_on_open(self, *args):
+        print("is modified", self.is_changed)
+        md = Gtk.MessageDialog(title="m3uEditor", message_type=Gtk.MessageType.QUESTION, 
+                                text="The document was changed.\n\nSave changes?", 
+                                parent=None)
+        md.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+             "Yes", Gtk.ResponseType.YES, "No", Gtk.ResponseType.NO)
+             
+        response = md.run()
+        if response == Gtk.ResponseType.YES:
+            md.destroy()
+            return 1
+        elif response == Gtk.ResponseType.NO:
+            md.destroy()
+            return 2
+        elif response == Gtk.ResponseType.CANCEL:
+            md.destroy()
+            return 3
         md.destroy()
         
     def on_close(self, *args):
@@ -338,25 +393,40 @@ class TreeViewFilterWindow(Gtk.Window):
             self.my_liststore.move_after(self.my_liststore.get_iter(path), self.my_liststore.get_iter((index_above,)))
         
     def on_open_file(self, *args):
-       dlg = Gtk.FileChooserDialog(title="Please choose a file", parent=None, action = 0)
-       dlg.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
-                 "Open", Gtk.ResponseType.OK)
-       docs = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
-       dlg.set_current_folder(docs)     
-       filter = Gtk.FileFilter()
-       filter.set_name("M3U Files")
-       filter.add_pattern("*.m3u")
-       dlg.add_filter(filter)
-       response = dlg.run()
+       # save question
+       if self.is_changed:
+           b = self.maybe_saved_on_open()
+           if b == 1:
+               self.on_save_file()
+               self.open_file()
+           elif b == 2:
+               self.is_changed = False
+               self.open_file()
+           else:
+               return
+       else:
+           self.open_file()
 
-       if response == Gtk.ResponseType.OK:
-           self.current_file = (dlg.get_filename())
-           self.m3u_file = self.current_file
-           self.convert_to_csv()
-           self.load_into_table(self.csv_file)
-           self.current_file = self.csv_file
+    def open_file(self, *args):
+           dlg = Gtk.FileChooserDialog(title="Please choose a file", parent=None, action = 0)
+           dlg.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
+                     "Open", Gtk.ResponseType.OK)
+           docs = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
+           dlg.set_current_folder(docs)     
+           filter = Gtk.FileFilter()
+           filter.set_name("M3U Files")
+           filter.add_pattern("*.m3u")
+           dlg.add_filter(filter)
+           response = dlg.run()
 
-       dlg.destroy()
+           if response == Gtk.ResponseType.OK:
+               self.current_file = (dlg.get_filename())
+               self.m3u_file = self.current_file
+               self.convert_to_csv()
+               self.load_into_table(self.csv_file)
+               self.current_file = self.csv_file
+
+           dlg.destroy()               
        
     def load_into_table(self, csv_file, *args):
         self.search_field.set_text("")
@@ -427,6 +497,7 @@ class TreeViewFilterWindow(Gtk.Window):
                 f.write(m3u_content)
                 self.is_changed = False 
                 self.status_label.set_text(f'{infile} saved')
+                print(f'{infile} saved')
        else:
            print("None")
        dlg.destroy()   
@@ -455,6 +526,7 @@ class TreeViewFilterWindow(Gtk.Window):
                 f.write(m3u_content)
                 self.is_changed = False 
                 self.status_label.set_text(f'{self.m3u_file} saved')
+                print(f'{self.m3u_file} saved')
               
     def convert_to_m3u(self):
         mylist = open(self.csv_file, 'r').read().splitlines()
