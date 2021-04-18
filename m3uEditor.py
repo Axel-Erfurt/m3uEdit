@@ -285,6 +285,15 @@ class Viewer(QMainWindow):
         self.filter_combo.addItems(['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url'])
         self.filter_combo.currentIndexChanged.connect(self.filter_table)
         tb.addWidget(self.filter_combo)
+
+        save_filtered_btn = QToolButton()
+        save_filtered_btn.setShortcut(QKeySequence.SaveAs)
+        save_filtered_btn.setIcon(QIcon.fromTheme("document-save-as"))
+        save_filtered_btn.setToolTip("save filtered list to m3u File")
+        save_filtered_btn.clicked.connect(self.save_filtered)
+        tb.addWidget(save_filtered_btn)
+
+        tb.addSeparator()
         
         play_btn = QToolButton()
         play_btn.setIcon(QIcon.fromTheme("mpv"))
@@ -531,7 +540,74 @@ class Viewer(QMainWindow):
         for x in range(self.lb.model().rowCount()):
             if not x in row_list:
                 self.lb.hideRow(x)
-       
+
+    def save_filtered(self):
+        if self.model.rowCount() < 1:
+            return
+        self.clear_filter()
+        index = self.filter_combo.currentIndex()
+        searchterm = self.filter_field.text()  
+        if searchterm == "":
+            return
+        row_list = []
+        self.lb.clearSelection()
+
+        for i in range(self.lb.model().columnCount()):
+            indexes = self.lb.model().match(
+                                self.lb.model().index(0, index),
+                                Qt.DisplayRole,
+                                searchterm,
+                                -1,
+                                Qt.MatchContains
+                            )
+            for ix in indexes:
+                self.lb.selectRow(ix.row())    
+                row_list.append(ix.row()) 
+
+        new_df = self.df.copy()
+        indexes_to_drop = []                
+        for x in range(self.lb.model().rowCount()-1):
+            if not x in row_list:
+                indexes_to_drop.append(x)
+        
+        new_df.drop(new_df.index[indexes_to_drop], inplace=True )
+        # save it
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save File", self.fname.replace(".csv", ".m3u"),"M3U Files (*.m3u)")
+        if fileName:
+            # save temporary csv
+            f = open(self.csv_file, 'w')
+            #newModel = self.model
+            new_df.to_csv(f, sep='\t', index = False, header = False)  
+            f.close()
+            
+            # convert to m3u
+            mylist = open(self.csv_file, 'r').read().splitlines()
+            group = ""
+            ch = ""
+            url = ""
+            id = ""
+            logo = ""
+            m3u_content = ""
+
+            headers = ['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url']
+            m3u_content += "#EXTM3U\n"
+
+            for x in range(1, len(mylist)):
+                line = mylist[x].split('\t')
+                ch = line[0]
+                group = line[1]
+                logo = line[2]
+                id = line[3]
+                url = line[4]
+                
+                m3u_content += f'#EXTINF:-1 tvg-name="{ch}" group-title="{group}" tvg-logo="{logo}" tvg-id="{id}",{ch}\n{url}\n'
+
+            with open(fileName, 'w') as f:        
+                f.write(m3u_content)
+
+            print(fileName + " saved")
+            self.model.setChanged = False        
+                
     def update_filter(self):
         if self.filter_field.text() == "":
             self.clear_filter()
@@ -587,7 +663,11 @@ def stylesheet(self):
     QToolButton:hover
         {   
             background: #a5dcff;           
-        }        
+        }  
+    QToolBar
+        {
+        border: 0px;
+        }
     """
  
 if __name__ == "__main__":
