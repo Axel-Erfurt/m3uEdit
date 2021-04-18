@@ -8,7 +8,7 @@ convert iptv m3u to csv and back
 ```python3 /path/to/csv_to_m3u.py '/path/to/input.csv' '/path/to/output.m3u'```
 
 ## m3uEditor.py
-
+   m3uEditorDE.py is a german version :de:
 ### Requirements
 
 - python3
