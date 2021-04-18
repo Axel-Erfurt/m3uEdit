@@ -31,9 +31,7 @@ CSS = """
  background: #444;
  color: #ace;
 }
-#btn_open:hover ,#btn_save:hover, 
-#btn_addrow:hover, #btn_copy_row:hover 
-#btn_paste_row:hover {
+button:hover {
  background: #abc;
 }
 #csv-view row:nth-child(odd) {
@@ -156,6 +154,16 @@ class TreeViewFilterWindow(Gtk.Window):
         
         self.hbox.pack_start(self.btn_row_down, False, False, 1)
         
+        # mpv button
+        self.mpv_btn = Gtk.Button.new_from_icon_name("mpv", 2)
+        self.mpv_btn.set_name("btn_open")
+        self.mpv_btn.set_tooltip_text("test stream with mpv")
+        self.mpv_btn.set_hexpand(False)
+        self.mpv_btn.set_relief(2)
+        self.mpv_btn.connect("clicked", self.on_open_mpv)
+        
+        self.hbox.pack_start(self.mpv_btn, False, False, 1)
+        
         sep = Gtk.Separator()
         self.hbox.pack_start(sep, False, False, 1)
         
@@ -244,6 +252,13 @@ class TreeViewFilterWindow(Gtk.Window):
         priority = Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         style.add_provider_for_screen(screen, provider, priority)
         
+    def on_open_mpv(self, *args):
+        model, paths = self.treeview.get_selection().get_selected_rows()
+        tree_iter = model.get_iter(paths[0])
+        value = model.get_value(tree_iter, 4)
+        cmd = ["mpv", value]
+        r  = GLib.spawn_async(cmd,flags=GLib.SpawnFlags.DO_NOT_REAP_CHILD, standard_output=True, standard_error=True)
+        
     def set_search_column(self, *args):
         index = self.column_selector.get_active()
         self.treeview.set_search_column(index)
@@ -252,8 +267,6 @@ class TreeViewFilterWindow(Gtk.Window):
         index = int(self.replace_selector.get_active())
         search_term = self.find_field.get_text()
         replace_term = self.replace_field.get_text()
-        #for row in self.my_liststore:
-        #    #print(row[:])
         if index == 0:
             column_number = 0
             iter_child = self.my_liststore.get_iter_first()
@@ -411,7 +424,10 @@ class TreeViewFilterWindow(Gtk.Window):
            dlg = Gtk.FileChooserDialog(title="Please choose a file", parent=None, action = 0)
            dlg.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
                      "Open", Gtk.ResponseType.OK)
-           docs = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
+           if not self.m3u_file == "":
+               docs = self.m3u_file.rpartition("/")[0]
+           else:
+               docs = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS)
            dlg.set_current_folder(docs)     
            filter = Gtk.FileFilter()
            filter.set_name("M3U Files")
