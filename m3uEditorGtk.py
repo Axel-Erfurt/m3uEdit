@@ -75,7 +75,8 @@ class TreeViewFilterWindow(Gtk.Window):
         self.vbox = Gtk.Box(orientation=1, vexpand=True)
         self.add(self.vbox)
         
-        self.hbox = Gtk.Box(orientation=0)
+        self.hbox = Gtk.Box(orientation=0, homogeneous=False, spacing=2)
+        self.hbox_next = Gtk.Box(orientation=0, homogeneous=False, spacing=6)
         
         # open button
         self.btn_open = Gtk.Button.new_from_icon_name("document-open", 2)
@@ -84,7 +85,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_open.set_hexpand(False)
         self.btn_open.set_relief(2)
         self.btn_open.connect("clicked", self.on_open_file)
-        
         self.hbox.pack_start(self.btn_open, False, False, 1)
         
         # save button
@@ -94,7 +94,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_save.set_hexpand(False)
         self.btn_save.set_relief(2)
         self.btn_save.connect("clicked", self.on_save_file)
-        
         self.hbox.pack_start(self.btn_save, False, False, 1)
 
         # save as button
@@ -104,7 +103,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_save_as.set_hexpand(False)
         self.btn_save_as.set_relief(2)
         self.btn_save_as.connect("clicked", self.on_save_file_as)
-        
         self.hbox.pack_start(self.btn_save_as, False, False, 1)
         
         # separator
@@ -118,7 +116,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_addrow.set_hexpand(False)
         self.btn_addrow.set_relief(2)
         self.btn_addrow.connect("clicked", self.on_add_row)
-        
         self.hbox.pack_start(self.btn_addrow, False, False, 1)
         
         # remove row button
@@ -128,7 +125,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_remove_row.set_hexpand(False)
         self.btn_remove_row.set_relief(2)
         self.btn_remove_row.connect("clicked", self.on_remove_row)
-        
         self.hbox.pack_start(self.btn_remove_row, False, False, 1)
         
         sep = Gtk.Separator()
@@ -141,7 +137,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_row_up.set_hexpand(False)
         self.btn_row_up.set_relief(2)
         self.btn_row_up.connect("clicked", self.on_row_up)
-        
         self.hbox.pack_start(self.btn_row_up, False, False, 1)
         
         # row down button
@@ -151,17 +146,15 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_row_down.set_hexpand(False)
         self.btn_row_down.set_relief(2)
         self.btn_row_down.connect("clicked", self.on_row_down)
-        
         self.hbox.pack_start(self.btn_row_down, False, False, 1)
         
         # mpv button
         self.mpv_btn = Gtk.Button.new_from_icon_name("mpv", 2)
-        self.mpv_btn.set_name("btn_open")
+        self.mpv_btn.set_name("btn_mpv")
         self.mpv_btn.set_tooltip_text("test stream with mpv")
         self.mpv_btn.set_hexpand(False)
         self.mpv_btn.set_relief(2)
         self.mpv_btn.connect("clicked", self.on_open_mpv)
-        
         self.hbox.pack_start(self.mpv_btn, False, False, 1)
         
         sep = Gtk.Separator()
@@ -178,31 +171,6 @@ class TreeViewFilterWindow(Gtk.Window):
         self.column_selector.set_tooltip_text("select column for internal search\nsearch by typing if table has focus")
         self.hbox.pack_start(self.column_selector, False, False, 1)
 
-        # find field
-        self.find_field = Gtk.SearchEntry()
-        self.find_field.set_placeholder_text("find ...")
-        self.find_field.connect("activate", self.replace_in_table)
-        self.find_field.set_vexpand(False)
-        self.hbox.pack_start(self.find_field, False, False, 1)
-
-        # replace field
-        self.replace_field = Gtk.SearchEntry()
-        self.replace_field.set_placeholder_text("replace with ...")
-        self.replace_field.set_vexpand(False)
-        self.hbox.pack_start(self.replace_field, False, False, 1)
-        
-        self.vbox.pack_start(self.hbox, False, False, 1)  
-  
-        # replace button
-        self.btn_replace_all = Gtk.Button.new_from_icon_name("edit-find-replace", 2)
-        self.btn_replace_all.set_name("btn_replace_all")
-        self.btn_replace_all.set_tooltip_text("replace all in selected column")
-        self.btn_replace_all.set_hexpand(False)
-        self.btn_replace_all.set_relief(2)
-        self.btn_replace_all.connect("clicked", self.replace_in_table)  
-        
-        self.hbox.pack_start(self.btn_replace_all, False, False, 1)
-        
         # replace all column selector
         items = ['tvg-name', 'group-title']
         self.replace_selector = Gtk.ComboBoxText()
@@ -212,7 +180,31 @@ class TreeViewFilterWindow(Gtk.Window):
         self.replace_selector.set_active(0)
         self.replace_selector.connect('changed', self.set_search_column)
         self.replace_selector.set_tooltip_text("select column for replace all")
-        self.hbox.pack_start(self.replace_selector, False, False, 1)
+        self.hbox_next.pack_start(self.replace_selector, False, False, 1)
+        
+        # find field
+        self.find_field = Gtk.SearchEntry()
+        self.find_field.set_placeholder_text("find ...")
+        self.find_field.connect("activate", self.replace_in_table)
+        self.find_field.set_vexpand(False)
+        self.hbox_next.pack_start(self.find_field, False, False, 1)
+
+        # replace field
+        self.replace_field = Gtk.SearchEntry()
+        self.replace_field.set_placeholder_text("replace with ...")
+        self.replace_field.set_vexpand(False)
+        self.hbox_next.pack_start(self.replace_field, False, False, 1)        
+        self.vbox.pack_start(self.hbox, False, False, 1)  
+  
+        # replace button
+        self.btn_replace_all = Gtk.Button.new_from_icon_name("edit-find-replace", 2)
+        self.btn_replace_all.set_name("btn_replace_all")
+        self.btn_replace_all.set_tooltip_text("replace all in selected column")
+        self.btn_replace_all.set_hexpand(False)
+        self.btn_replace_all.set_relief(2)
+        self.btn_replace_all.connect("clicked", self.replace_in_table)          
+        self.hbox_next.pack_start(self.btn_replace_all, False, False, 1)
+        
         
         # search field
         self.search_field = Gtk.SearchEntry()
@@ -222,9 +214,10 @@ class TreeViewFilterWindow(Gtk.Window):
         self.search_field.connect("search-changed", self.on_filter_changed)
         self.search_field.set_tooltip_text("filter table by search term")
         self.search_field.set_vexpand(False)
-        self.hbox.pack_end(self.search_field, False, False, 1)
+        self.hbox_next.pack_end(self.search_field, False, False, 1)
         
         self.vbox.pack_start(self.hbox, False, False, 1)
+        self.vbox.pack_start(self.hbox_next, False, False, 1)
 
         # treeview
         self.treeview = Gtk.TreeView()
@@ -610,6 +603,10 @@ class TreeViewFilterWindow(Gtk.Window):
             return model[iter][0] == self.current_filter_text
 
     def on_filter_clicked(self, widget):
+        if self.my_liststore == None:
+            return
+        if not self.my_liststore:
+            return
         self.current_filter_text = widget.get_text()
         self.my_filter.refilter()
 
