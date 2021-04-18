@@ -458,8 +458,15 @@ class Viewer(QMainWindow):
     def writeCSV(self):
         if self.model.rowCount() < 1:
             return
-        fileName, _ = QFileDialog.getSaveFileName(self, "Datei speichern", self.fname.replace(".csv", ".m3u"),"M3U Files (*.m3u)")
-        if fileName:
+        if self.m3u_file == "":
+            fileName, _ = QFileDialog.getSaveFileName(self, "Save File", self.fname.replace(".csv", ".m3u"),"M3U Files (*.m3u)")
+            if fileName:
+                self.save_file(fileName)
+        else:
+            fileName = self.m3u_file
+            self.save_file(fileName)
+            
+    def save_file(self, fileName):
             # save temporary csv
             f = open(self.csv_file, 'w')
             newModel = self.model
