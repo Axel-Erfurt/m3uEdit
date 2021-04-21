@@ -250,19 +250,19 @@ class Viewer(QMainWindow):
         tb.addWidget(del_btn)
         
         add_btn = QToolButton()
-        add_btn.setIcon(QIcon.fromTheme("add"))
+        add_btn.setIcon(QIcon.fromTheme("list-add"))
         add_btn.setToolTip("add row")
         add_btn.clicked.connect(self.add_row)
         tb.addWidget(add_btn)
 
         move_down_btn = QToolButton()
-        move_down_btn.setIcon(QIcon.fromTheme("down"))
+        move_down_btn.setIcon(QIcon.fromTheme("go-down"))
         move_down_btn.setToolTip("move down")
         move_down_btn.clicked.connect(self.move_down)
         tb.addWidget(move_down_btn)
         
         move_up_up = QToolButton()
-        move_up_up.setIcon(QIcon.fromTheme("up"))
+        move_up_up.setIcon(QIcon.fromTheme("go-up"))
         move_up_up.setToolTip("move up")
         move_up_up.clicked.connect(self.move_up)
         tb.addWidget(move_up_up)
