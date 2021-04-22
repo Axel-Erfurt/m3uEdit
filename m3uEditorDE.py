@@ -217,6 +217,13 @@ class Viewer(QMainWindow):
         save_btn.clicked.connect(self.writeCSV)
         tb.addWidget(save_btn)
         
+        save_as_btn = QToolButton()
+        save_as_btn.setShortcut(QKeySequence.SaveAs)
+        save_as_btn.setIcon(QIcon.fromTheme("document-save-as"))
+        save_as_btn.setToolTip("m3u-Datei speichern als ...")
+        save_as_btn.clicked.connect(self.writeCSV_as)
+        tb.addWidget(save_as_btn)
+        
         empty = QWidget()
         empty.setFixedWidth(44)
         tb.addWidget(empty)
@@ -465,6 +472,13 @@ class Viewer(QMainWindow):
         else:
             fileName = self.m3u_file
             self.save_file(fileName)
+
+    def writeCSV_as(self):
+        if self.model.rowCount() < 1:
+            return
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save File", self.fname.replace(".csv", ".m3u"),"M3U Files (*.m3u)")
+        if fileName:
+            self.save_file(fileName)
             
     def save_file(self, fileName):
             # save temporary csv
@@ -500,6 +514,8 @@ class Viewer(QMainWindow):
                 f.write(m3u_content)
 
             print(fileName + " gespeichert")
+            self.statusBar().showMessage(f"{fileName} gespeichert", 0)
+            self.m3u_file = fileName
             self.model.setChanged = False
 
 
