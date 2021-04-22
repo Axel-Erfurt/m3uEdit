@@ -525,7 +525,7 @@ class Viewer(QMainWindow):
         index = self.replace_filter_combo.currentIndex()
         searchterm = self.findfield.text()
         replaceterm = self.replacefield.text()
-        if searchterm == "" or replaceterm == "":
+        if searchterm == "":
             return
         else:
             if len(self.df.index) > 0:
