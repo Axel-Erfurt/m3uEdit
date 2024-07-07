@@ -250,7 +250,8 @@ class TreeViewFilterWindow(Gtk.Window):
         tree_iter = model.get_iter(paths[0])
         value = model.get_value(tree_iter, 4)
         cmd = ["mpv", value]
-        r  = GLib.spawn_async(cmd,flags=GLib.SpawnFlags.DO_NOT_REAP_CHILD, standard_output=True, standard_error=True)
+        r  = GLib.spawn_async(cmd,flags=GLib.SpawnFlags.SEARCH_PATH, standard_output=True, standard_error=True)
+        print(f"playing {value}")
         
     def set_search_column(self, *args):
         index = self.column_selector.get_active()
