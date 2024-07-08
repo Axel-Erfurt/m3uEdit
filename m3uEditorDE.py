@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
 import pandas as pd
@@ -615,7 +615,7 @@ class Viewer(QMainWindow):
             headers = ['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url']
             m3u_content += "#EXTM3U\n"
 
-            for x in range(0, len(mylist)):
+            for x in range(0, len(mylist)-1):
                 line = mylist[x].split('\t')
                 ch = line[0]
                 group = line[1]
