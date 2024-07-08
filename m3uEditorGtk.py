@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import gi
@@ -159,17 +159,6 @@ class TreeViewFilterWindow(Gtk.Window):
         
         sep = Gtk.Separator()
         self.hbox.pack_start(sep, False, False, 1)
-        
-        # table search column selector
-        items = ['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url']
-        self.column_selector = Gtk.ComboBoxText()
-        self.column_selector.set_name("selcombo")
-        for item in items:
-            self.column_selector.append_text(item)
-        self.column_selector.set_active(0)
-        self.column_selector.connect('changed', self.set_search_column)
-        self.column_selector.set_tooltip_text("select column for internal search\nsearch by typing if table has focus")
-        self.hbox.pack_start(self.column_selector, False, False, 1)
 
         # replace all column selector
         items = ['tvg-name', 'group-title']
@@ -205,6 +194,17 @@ class TreeViewFilterWindow(Gtk.Window):
         self.btn_replace_all.connect("clicked", self.replace_in_table)          
         self.hbox_next.pack_start(self.btn_replace_all, False, False, 1)
         
+        # table search column selector
+        items = ['tvg-name', 'group-title', 'tvg-logo', 'tvg-id', 'url']
+        self.column_selector = Gtk.ComboBoxText()
+        self.column_selector.set_name("selcombo")
+        for item in items:
+            self.column_selector.append_text(item)
+        self.column_selector.set_active(0)
+        #self.column_selector.connect('changed', self.set_search_column)
+        self.column_selector.connect('changed', self.on_filter_changed)
+        self.column_selector.set_tooltip_text("select column for internal search\nsearch by typing if table has focus")
+        self.hbox_next.pack_end(self.column_selector, False, False, 1)
         
         # search field
         self.search_field = Gtk.SearchEntry()
@@ -268,9 +268,9 @@ class TreeViewFilterWindow(Gtk.Window):
             while iter_child:
                 if (search_term in self.my_liststore.get_value(iter_child, column_number)):
                     tree_path = self.my_liststore.get_path(iter_child)
-                    print(tree_path, column_number)
+                    #print(tree_path, column_number)
                     value = self.my_liststore.get_value(iter_child, column_number).replace(search_term, replace_term)
-                    print(value)
+                    #print(value)
                     self.my_liststore.set_value(iter_child, column_number, value)
                 iter_child = self.my_liststore.iter_next(iter_child)
         elif index == 1:
@@ -280,9 +280,9 @@ class TreeViewFilterWindow(Gtk.Window):
             while iter_child:
                 if (search_term in self.my_liststore.get_value(iter_child, column_number)):
                     tree_path = self.my_liststore.get_path(iter_child)
-                    print(tree_path, column_number)
+                    #print(tree_path, column_number)
                     value = self.my_liststore.get_value(iter_child, column_number).replace(search_term, replace_term)
-                    print(value)
+                    #print(value)
                     self.my_liststore.set_value(iter_child, column_number, value)
                 iter_child = self.my_liststore.iter_next(iter_child)
         self.is_changed = True
@@ -612,9 +612,11 @@ class TreeViewFilterWindow(Gtk.Window):
         self.my_filter.refilter()
 
     def visible_cb(self, model, iter, data=None):
+        index = self.column_selector.get_active()
+        self.treeview.set_search_column(index)
         search_query = self.search_field.get_text().lower()
-        active_category = 0
-        search_in_all_columns = True
+        active_category = index #0
+        search_in_all_columns = False
 
         if search_query == "":
             return True
@@ -630,12 +632,13 @@ class TreeViewFilterWindow(Gtk.Window):
             return False
 
         value = model.get_value(iter, active_category).lower()
-        #return True if value.startswith(search_query) else False
         return True if search_query in value else False
         
     def on_filter_changed(self, *args):
-        if self.search_field.get_text() == "":
+        if self.search_field.get_text() != "":
             self.on_filter_clicked(self.search_field)
+        else:
+            self.my_filter.refilter()
     
     def convert_to_csv(self):
         mylist = open(self.m3u_file, 'r').read().splitlines()
